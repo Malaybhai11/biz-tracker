@@ -1,4 +1,4 @@
-import NextAuth, { SessionStrategy } from "next-auth"
+import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { PrismaClient } from "@prisma/client"
@@ -31,11 +31,11 @@ export const authOptions = {
     }),
   ],
   session: {
-    strategy: "jwt",
-    maxAge: 60 * 60 * 24,
+    strategy: "jwt" as const, // 👈 this fixes TypeScript issue
+    maxAge: 60 * 60 * 24, // 1 day
   },
   jwt: {
-    maxAge: 60 * 60 * 24, // ✅ also enforce 1 day for JWT
+    maxAge: 60 * 60 * 24, // also enforce 1 day
   },
   secret: process.env.NEXTAUTH_SECRET,
 }
