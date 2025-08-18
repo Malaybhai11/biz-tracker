@@ -24,7 +24,7 @@ import {
   Package
 } from "lucide-react"
 
-export default function AppNavbar() {
+export default function MainLanding() {
   const [activeItem, setActiveItem] = useState("home")
   const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false)
   const dropdownRef = useRef(null)
@@ -85,6 +85,7 @@ export default function AppNavbar() {
 
   return (
     <>
+      {/*Got these from DEEP Web SEARCH*/}
       <style jsx>{`
         @keyframes twinkle {
           0%, 100% { opacity: 0.3; transform: scale(1); }
@@ -165,8 +166,7 @@ export default function AppNavbar() {
           animation: nebula 20s ease-in-out infinite;
         }
       `}</style>
-
-      {/* Cosmic starfield background with shooting stars */}
+      {/* Background with nebula and stars */}
       <div className="fixed inset-0 bg-gradient-to-b from-gray-900 via-blue-900 to-black overflow-hidden pointer-events-none z-0">
         {/* Nebula clouds */}
         <div className="absolute inset-0">
@@ -601,10 +601,51 @@ export default function AppNavbar() {
             </div>
           </div>
 
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-8 mb-12">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-white mb-4">Dairy Management Suite</h2>
+              <p className="text-gray-300 text-lg">Specialized tools for Dairy Product service businesses</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="p-4 bg-red-500/20 rounded-xl w-fit mx-auto mb-4">
+                  <div className="h-8 w-8 bg-red-400 rounded-lg mx-auto"></div>
+                </div>
+                <h4 className="text-lg font-semibold text-white mb-2">Riders Management</h4>
+                <p className="text-gray-400 text-sm">Real-time table status, Orders, and Time optimization</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="p-4 bg-yellow-500/20 rounded-xl w-fit mx-auto mb-4">
+                  <div className="h-8 w-8 bg-yellow-400 rounded-lg mx-auto"></div>
+                </div>
+                <h4 className="text-lg font-semibold text-white mb-2">Order Processing</h4>
+                <p className="text-gray-400 text-sm">Helps Track Order Changes From Whatsapp Only</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="p-4 bg-indigo-500/20 rounded-xl w-fit mx-auto mb-4">
+                  <div className="h-8 w-8 bg-indigo-400 rounded-lg mx-auto"></div>
+                </div>
+                <h4 className="text-lg font-semibold text-white mb-2">Whatsapp Bot</h4>
+                <p className="text-gray-400 text-sm">Automated Whatsapp Bot To Track Changes In Daily</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="p-4 bg-teal-500/20 rounded-xl w-fit mx-auto mb-4">
+                  <div className="h-8 w-8 bg-teal-400 rounded-lg mx-auto"></div>
+                </div>
+                <h4 className="text-lg font-semibold text-white mb-2">Advanced Staff Information</h4>
+                <p className="text-gray-400 text-sm">Enjoy Riders Performances & Stats On Dashboard Only</p>
+              </div>
+            </div>
+          </div>
+
           <div className="text-center">
             <h2 className="text-3xl font-bold text-white mb-4">Built By Malay Raval.</h2>
             <p className="text-gray-300 text-lg mb-8">
-              Hi, I`m Malay Raval, a 17-year-old student and aspiring MAANG engineer.
+              Hi, I`m Malay Raval, a 17-year-old student who Dreams to be MAANG engineer.
               Passionate about DSA, Next.js, and AI-driven apps, always building to learn and grow.
               Currently working on BizTracker to simplify business management with smart tech.
               Dreaming big, building big — on a journey to become Sofware Developer.
@@ -616,13 +657,19 @@ export default function AppNavbar() {
             <h2 className="text-3xl font-bold text-white mb-8">Get Started Today</h2>
             <div className="flex flex-wrap justify-center gap-4">
               <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg">
-                Start For Free
+                <Link href="/new/signup">
+                  Start For Free
+                </Link>
               </button>
               <button className="bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/20 transition-all duration-300 hover:scale-105">
-                View Demo
+                <Link href="/Demo">
+                  View Demo
+                </Link>
               </button>
               <button className="bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/20 transition-all duration-300 hover:scale-105">
-                Contact Sales
+                <Link href="/About">
+                  Know More About Malay
+                </Link>
               </button>
             </div>
           </div>
