@@ -13,9 +13,6 @@ export async function POST(req: Request) {
       email,
       name,
       password: hashedPassword,
-      progress: {
-        create: {}, // auto create UserProgress with default "Noob"
-      },
     },
   })
 
