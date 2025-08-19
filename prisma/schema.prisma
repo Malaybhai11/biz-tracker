@@ -3,6 +3,8 @@
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is enhanced Prisma schema file for BizTracker
+// Supports Restaurant, Dairy, and Other Business management
 
 datasource db {
   provider = "postgresql"
@@ -14,20 +16,80 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-
-  progress UserProgress? // 👈 one-to-one relation (optional)
+  id                   String   @id @default(cuid())
+  name                 String?
+  email                String   @unique
+  password             String
+  createdAt            DateTime @default(now())
+  
+  // Onboarding tracking
+  isOnboardingComplete Boolean @default(false)
+  selectedSuite        String? // "restaurant", "dairy", "other", "demo"
+  
+  // Business profiles (only one will be filled based on selectedSuite)
+  restaurantProfile    RestaurantProfile?
+  dairyProfile         DairyProfile?
+  otherBusinessProfile OtherBusinessProfile?
+  
+  @@map("User")
 }
 
-model UserProgress {
-  id     String @id @default(cuid())
-  userId String @unique
-  level  String @default("Noob") // Noob, Intermediate, Pro
-  score  Int    @default(0)
+// 🍽️ Restaurant Management Suite
+model RestaurantProfile {
+  id                        String   @id @default(cuid())
+  userId                    String   @unique
+  businessName              String
+  businessAddress           String
+  numberOfTables            Int?
+  averageDailyCustomers     Int?
+  staffCount                Int?
+  whatsappOrderIntegration  Boolean  @default(false)
+  paymentMethods            String[] // ["Cash", "UPI", "Card", "Mixed"]
+  kitchenDisplaySystem      Boolean  @default(false)
+  operatingHours            Json     // {open: "09:00", close: "22:00"}
+  createdAt                 DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("RestaurantProfile")
+}
 
-  user User @relation(fields: [userId], references: [id])
+// 🥛 Dairy Management Suite  
+model DairyProfile {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  businessName            String
+  businessAddress         String
+  numberOfRiders          Int?
+  riderShiftTimings       Json?    // {morning: "06:00-14:00", evening: "14:00-22:00"}
+  productsSold            String[] // ["Milk", "Paneer", "Curd", "Ice Cream"]
+  dailyAverageOrders      Int?
+  whatsappOrderTracking   Boolean  @default(false)
+  expiryDateTracking      Boolean  @default(false)
+  paymentMethods          String[] // ["Cash", "UPI", "Subscription", "Mixed"]
+  createdAt               DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("DairyProfile")
+}
+
+// 🏬 Other Businesses (Provisional Stores, Malls, etc.)
+model OtherBusinessProfile {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  businessName           String
+  businessAddress        String
+  storeType              String   // "Mall", "Provisional", "Clothing", "Electronics", etc.
+  numberOfSKUs           Int?     // approximate inventory items
+  barcodeScanning        Boolean  @default(false)
+  stockAutoReorder       Boolean  @default(false)
+  salesProfitAnalytics   Boolean  @default(false)
+  paymentMethods         String[] // ["Cash", "UPI", "Card", "Online Wallets", "Mixed"]
+  staffCount             Int?
+  createdAt              DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("OtherBusinessProfile")
 }

@@ -21,8 +21,41 @@ import {
   Plus,
   Eye
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { authOptions } from "@/lib/auth"; // adjust the import path as needed
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Show loading state
+    if (status === "loading") {
+      return (
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-lg">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Show login prompt if not authenticated
+    if (status === "unauthenticated" || !session) {
+      return (
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="text-center space-y-4">
+            <h1 className="text-2xl font-bold">Please log in to access the dashboard</h1>
+            <Button onClick={() => router.push("/new/login")}>
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      );
+    }
+  
   return (
     <div className="px-4 py-10 flex justify-center">
       <div className="w-full max-w-6xl space-y-12">

@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react"
 import { useState } from "react"
 
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
@@ -23,7 +24,7 @@ export default function LoginPage() {
     setLoading(false)
 
     if (res?.ok) {
-      window.location.href = "/dashboard" // after login → dashboard/pipeline
+      window.location.href = "/onboarding" // after login → dashboard/pipeline
     } else {
       alert("Invalid credentials")
     }

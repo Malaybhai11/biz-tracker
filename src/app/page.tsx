@@ -410,7 +410,7 @@ export default function MainLanding() {
               Streamline your operations with real-time tracking for inventory, sales, deliveries, and more
             </p>
             <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 shadow-lg">
-              <Link href="/new">
+              <Link href="/new/signup">
               Get Started
               </Link>
             </button>
@@ -621,7 +621,7 @@ export default function MainLanding() {
                   <div className="h-8 w-8 bg-yellow-400 rounded-lg mx-auto"></div>
                 </div>
                 <h4 className="text-lg font-semibold text-white mb-2">Order Processing</h4>
-                <p className="text-gray-400 text-sm">Helps Track Order Changes From Whatsapp Only</p>
+                <p className="text-gray-400 text-sm">Track and manage order updates directly from WhatsApp — no extra tools needed.</p>
               </div>
               
               <div className="text-center">
@@ -648,7 +648,7 @@ export default function MainLanding() {
               Hi, I`m Malay Raval, a 17-year-old student who Dreams to be MAANG engineer.
               Passionate about DSA, Next.js, and AI-driven apps, always building to learn and grow.
               Currently working on BizTracker to simplify business management with smart tech.
-              Dreaming big, building big — on a journey to become Sofware Developer.
+              Dreaming big, building big — on a journey to become Software Developer.
             </p>
           </div>
 
