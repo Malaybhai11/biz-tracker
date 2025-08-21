@@ -1,7 +1,7 @@
 // app/api/onboarding/complete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth'; // Adjust the path to your auth file
+import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -28,52 +28,71 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update user's onboarding status and save business data
-    const updatedUser = await prisma.user.update({
-      where: {
-        id: session.user.id,
-      },
-      data: {
-        isOnboardingComplete: true,
-        // You can also store the business data in a separate Business model
-        // or add fields to the User model for business info
-      },
+    console.log('Session user ID:', session.user.id);
+
+    // Use a transaction to ensure both operations succeed or fail together
+    const result = await prisma.$transaction(async (tx) => {
+      // First, upsert the user (create if doesn't exist, update if exists)
+      const user = await tx.user.upsert({
+        where: {
+          id: session.user.id,
+        },
+        update: {
+          isOnboardingComplete: true,
+          selectedSuite: selectedSuite,
+        },
+        create: {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.name || '',
+          isOnboardingComplete: true,
+          selectedSuite: selectedSuite,
+        },
+      });
+
+      console.log('User upserted:', user);
+
+      // Now create the business record with the correct relation
+      const businessRecord = await tx.business.create({
+        data: {
+          // Use userId instead of connect if your schema expects userId field
+          userId: session.user.id,
+          businessType: selectedSuite,
+          businessName: businessData.businessName,
+          businessAddress: businessData.businessAddress,
+          // Restaurant fields
+          numberOfTables: selectedSuite === 'restaurant' ? businessData.numberOfTables : null,
+          averageDailyCustomers: selectedSuite === 'restaurant' ? businessData.averageDailyCustomers : null,
+          whatsappOrderIntegration: selectedSuite === 'restaurant' ? businessData.whatsappOrderIntegration : null,
+          paymentMethods: selectedSuite === 'restaurant' ? (businessData.paymentMethods || []) : [],
+          // Dairy fields
+          productsSold: selectedSuite === 'dairy' ? (businessData.productsSold || []) : [],
+          // Other fields
+          storeType: selectedSuite === 'other' ? businessData.storeType : null,
+        },
+      });
+
+      return { user, businessRecord };
     });
 
-    // Create business record (you'll need to create this model in your Prisma schema)
-    const businessRecord = await prisma.business.create({
-      data: {
-        user: { connect: { id: session.user.id } },
-        businessType: selectedSuite,
-        businessName: businessData.businessName,
-        businessAddress: businessData.businessAddress,
-        // Restaurant fields
-        numberOfTables: selectedSuite === 'restaurant' ? businessData.numberOfTables : undefined,
-        averageDailyCustomers: selectedSuite === 'restaurant' ? businessData.averageDailyCustomers : undefined,
-        whatsappOrderIntegration: selectedSuite === 'restaurant' ? businessData.whatsappOrderIntegration : undefined,
-        paymentMethods: selectedSuite === 'restaurant' ? businessData.paymentMethods : [],
-        // Dairy fields
-        productsSold: selectedSuite === 'dairy' ? businessData.productsSold : [],
-        // Other fields
-        storeType: selectedSuite === 'other' ? businessData.storeType : undefined,
-      },
-    });
-    // Optionally, update the user's selectedSuite field
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { selectedSuite },
-    });
     return NextResponse.json({
       success: true,
       message: 'Onboarding completed successfully',
-      user: updatedUser,
-      business: businessRecord,
+      user: result.user,
+      business: result.businessRecord,
     });
 
   } catch (error) {
     console.error('Onboarding completion error:', error);
+    
+    // More detailed error logging
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     );
   } finally {
