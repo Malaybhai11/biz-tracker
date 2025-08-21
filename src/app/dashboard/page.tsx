@@ -21,7 +21,7 @@ import {
   Plus,
   Eye
 } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { getSession, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { authOptions } from "@/lib/auth"; // adjust the import path as needed
@@ -41,7 +41,7 @@ export default function Home() {
         </div>
       );
     }
-
+    
     // Show login prompt if not authenticated
     if (status === "unauthenticated" || !session) {
       return (

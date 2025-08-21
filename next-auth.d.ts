@@ -1,18 +1,18 @@
-import NextAuth, { DefaultSession, DefaultUser } from "next-auth"
+// types/next-auth.d.ts
+import NextAuth from "next-auth"
 
 declare module "next-auth" {
   interface Session {
     user: {
       id: string
-    } & DefaultSession["user"]
+      name?: string | null
+      email?: string | null
+      image?: string | null
+      isOnboardingComplete?: boolean
+    }
   }
-  interface User extends DefaultUser {
+  interface User {
     id: string
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    id: string
+    isOnboardingComplete?: boolean
   }
 }

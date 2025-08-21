@@ -1,9 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-// This is enhanced Prisma schema file for BizTracker
+// This is your fixed Prisma schema file for BizTracker
 // Supports Restaurant, Dairy, and Other Business management
 
 datasource db {
@@ -15,26 +10,105 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// NextAuth required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+// Main User model (consolidated and fixed)
 model User {
-  id                   String   @id @default(cuid())
-  name                 String?
-  email                String   @unique
-  password             String
-  createdAt            DateTime @default(now())
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   
   // Onboarding tracking
   isOnboardingComplete Boolean @default(false)
   selectedSuite        String? // "restaurant", "dairy", "other", "demo"
   
-  // Business profiles (only one will be filled based on selectedSuite)
+  // NextAuth relations
+  accounts Account[]
+  sessions Session[]
+  
+  // Business relations (only one will be filled based on selectedSuite)
+  business             Business?
   restaurantProfile    RestaurantProfile?
   dairyProfile         DairyProfile?
   otherBusinessProfile OtherBusinessProfile?
   
-  @@map("User")
+  @@map("users")
 }
 
-// 🍽️ Restaurant Management Suite
+// Consolidated Business model for simple onboarding data
+model Business {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Common fields for all business types
+  businessType    String
+  businessName    String
+  businessAddress String?
+  
+  // Restaurant specific fields
+  numberOfTables           Int?
+  averageDailyCustomers   Int?
+  whatsappOrderIntegration Boolean?
+  paymentMethods          String[] // Store as JSON array
+  
+  // Dairy specific fields
+  productsSold String[] // Store as JSON array
+  
+  // Other business specific fields
+  storeType String?
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("businesses")
+}
+
+// 🍽️ Restaurant Management Suite (Detailed profile for advanced features)
 model RestaurantProfile {
   id                        String   @id @default(cuid())
   userId                    String   @unique
@@ -46,15 +120,16 @@ model RestaurantProfile {
   whatsappOrderIntegration  Boolean  @default(false)
   paymentMethods            String[] // ["Cash", "UPI", "Card", "Mixed"]
   kitchenDisplaySystem      Boolean  @default(false)
-  operatingHours            Json     // {open: "09:00", close: "22:00"}
+  operatingHours            Json?    // {open: "09:00", close: "22:00"}
   createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  @@map("RestaurantProfile")
+  @@map("restaurant_profiles")
 }
 
-// 🥛 Dairy Management Suite  
+// 🥛 Dairy Management Suite (Detailed profile for advanced features)
 model DairyProfile {
   id                      String   @id @default(cuid())
   userId                  String   @unique
@@ -68,13 +143,14 @@ model DairyProfile {
   expiryDateTracking      Boolean  @default(false)
   paymentMethods          String[] // ["Cash", "UPI", "Subscription", "Mixed"]
   createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  @@map("DairyProfile")
+  @@map("dairy_profiles")
 }
 
-// 🏬 Other Businesses (Provisional Stores, Malls, etc.)
+// 🏬 Other Businesses (Detailed profile for advanced features)
 model OtherBusinessProfile {
   id                     String   @id @default(cuid())
   userId                 String   @unique
@@ -88,8 +164,9 @@ model OtherBusinessProfile {
   paymentMethods         String[] // ["Cash", "UPI", "Card", "Online Wallets", "Mixed"]
   staffCount             Int?
   createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  @@map("OtherBusinessProfile")
+  @@map("other_business_profiles")
 }

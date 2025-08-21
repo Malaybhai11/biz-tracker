@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ChevronRight,
   ChevronLeft,
@@ -13,108 +13,182 @@ import {
   CreditCard,
   Smartphone,
   Utensils,
+  Check,
+  ShoppingBag,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import Lottie from "lottie-react";
+
+/* =========================================================
+   PROGRESS BAR COMPONENT
+========================================================= */
+const ProgressBar = ({ current, total }: { current: number; total: number }) => {
+  const percentage = (current / total) * 100;
+  
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100">
+      <div className="h-1 bg-gray-200">
+        <div 
+          className="h-full bg-green-500 transition-all duration-500 ease-out"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+};
 
 /* =========================================================
    SHARED UI COMPONENTS
 ========================================================= */
 
-const WelcomeCard = ({ onNext }: { onNext: () => void }) => (
-  <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center p-4">
-    <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 max-w-2xl w-full text-center border border-white/20 shadow-2xl">
-      <div className="mb-8">
-        <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Building2 className="w-10 h-10 text-white" />
+const WelcomeCard = ({ onNext }: { onNext: () => void }) => {
+  const [welcomeAnimation, setWelcomeAnimation] = useState(null);
+
+  useEffect(() => {
+    fetch('/animations/welcome-building.json')
+      .then(response => response.json())
+      .then(data => setWelcomeAnimation(data))
+      .catch(err => console.warn('Failed to load welcome animation:', err));
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center">
+          <div className="mb-8">
+            <div className="w-24 h-24 mx-auto mb-8">
+              {welcomeAnimation ? (
+                <Lottie 
+                  animationData={welcomeAnimation} 
+                  style={{width: '100%', height: '100%'}} 
+                  loop={true}
+                />
+              ) : (
+                <div className="w-full h-full bg-green-100 rounded-full flex items-center justify-center">
+                  <Building2 className="w-12 h-12 text-green-600" />
+                </div>
+              )}
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">
+              Welcome to BizTracker
+            </h1>
+            <p className="text-lg text-gray-600 leading-relaxed">
+              Let's set up your business profile in just a few steps
+            </p>
+          </div>
+          <button
+            onClick={onNext}
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-2xl text-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+          >
+            Get Started
+          </button>
         </div>
-        <h1 className="text-4xl font-bold text-white mb-4">
-          Hey there, Future Business Hero! 👋
-        </h1>
-        <p className="text-xl text-white/90 leading-relaxed">
-          Ready to supercharge your business with BizTracker?
-          <br />
-          Let's discover what brings you here and tailor the perfect solution
-          for you!
-        </p>
       </div>
-      <button
-        onClick={onNext}
-        className="bg-white text-purple-600 px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-white/90 transform hover:scale-105 transition-all duration-300 shadow-lg"
-      >
-        Let's Get Started! 🚀
-      </button>
     </div>
-  </div>
-);
+  );
+};
 
 const SuiteSelector = ({
   onSelect,
 }: {
   onSelect: (suite: string) => void;
 }) => {
+  const [animations, setAnimations] = useState<any>({});
+
+  useEffect(() => {
+    const loadAnimations = async () => {
+      const animationNames = ['restaurant', 'dairy', 'store', 'computer'];
+      const loadedAnimations: any = {};
+      
+      for (const name of animationNames) {
+        try {
+          const response = await fetch(`/animations/${name}.json`);
+          const data = await response.json();
+          loadedAnimations[name] = data;
+        } catch (err) {
+          console.warn(`Failed to load ${name} animation:`, err);
+        }
+      }
+      
+      setAnimations(loadedAnimations);
+    };
+
+    loadAnimations();
+  }, []);
+
   const suites = [
     {
       id: "restaurant",
-      title: "🍽️ Restaurant Management",
-      description: "Perfect for restaurants, cafes, and food businesses",
-      icon: Building2,
-      color: "from-orange-500 to-red-600",
+      title: "Restaurant",
+      subtitle: "Perfect for restaurants, cafes, and food businesses",
+      animation: "restaurant",
+      icon: Utensils,
     },
     {
       id: "dairy",
-      title: "🥛 Dairy Management",
-      description: "Built for dairy businesses and milk delivery services",
+      title: "Dairy Business",
+      subtitle: "Built for dairy businesses and milk delivery services",
+      animation: "dairy",
       icon: Milk,
-      color: "from-blue-500 to-cyan-600",
     },
     {
       id: "other",
-      title: "🏬 Other Businesses",
-      description: "For retail stores, malls, and general businesses",
+      title: "Other Business",
+      subtitle: "For retail stores, malls, and general businesses",
+      animation: "store",
       icon: Store,
-      color: "from-green-500 to-emerald-600",
     },
     {
       id: "demo",
-      title: "🧑‍💻 Just Exploring",
-      description: "Take a tour with our interactive demo",
+      title: "Just Exploring",
+      subtitle: "Take a tour with our interactive demo",
+      animation: "computer",
       icon: Code,
-      color: "from-purple-500 to-indigo-600",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
-      <div className="max-w-6xl w-full">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-white mb-4">
-            What brings you here?
-          </h2>
-          <p className="text-xl text-gray-300">
-            Choose the perfect suite for your business
-          </p>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {suites.map((suite) => {
-            const IconComponent = suite.icon;
-            return (
-              <div
+    <div className="min-h-screen bg-white flex flex-col">
+      <ProgressBar current={1} total={8} />
+      <div className="flex-1 flex items-center justify-center p-6 pt-16">
+        <div className="max-w-lg w-full">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              What type of business do you have?
+            </h2>
+            <p className="text-gray-600">Choose the option that best describes your business</p>
+          </div>
+          <div className="space-y-4">
+            {suites.map((suite) => (
+              <button
                 key={suite.id}
                 onClick={() => onSelect(suite.id)}
-                className={`bg-gradient-to-br ${suite.color} p-6 rounded-3xl cursor-pointer hover:scale-105 transform transition-all duration-300 shadow-xl hover:shadow-2xl`}
+                className="w-full p-6 bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 hover:border-green-300 rounded-2xl text-left transition-all duration-200 transform hover:scale-102 hover:shadow-lg"
               >
-                <IconComponent className="w-12 h-12 text-white mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">
-                  {suite.title}
-                </h3>
-                <p className="text-white/80 mb-4">{suite.description}</p>
-                <div className="flex items-center text-white font-semibold">
-                  Get Started <ChevronRight className="ml-2 w-5 h-5" />
+                <div className="flex items-center">
+                  <div className="w-12 h-12 mr-4">
+                    {animations[suite.animation] ? (
+                      <Lottie 
+                        animationData={animations[suite.animation]} 
+                        style={{width: '100%', height: '100%'}} 
+                        loop={true}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-green-100 rounded-lg flex items-center justify-center">
+                        <suite.icon className="w-6 h-6 text-green-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      {suite.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">{suite.subtitle}</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
-              </div>
-            );
-          })}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -131,6 +205,9 @@ const QuestionCard: React.FC<{
   canProceed?: boolean;
   onFinish?: () => void;
   isSubmitting?: boolean;
+  currentStep?: number;
+  totalSteps?: number;
+  animationData?: any;
 }> = ({
   icon: Icon,
   title,
@@ -141,42 +218,70 @@ const QuestionCard: React.FC<{
   canProceed = true,
   onFinish,
   isSubmitting,
+  currentStep = 0,
+  totalSteps = 8,
+  animationData,
 }) => (
-  <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center p-4">
-    <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl">
-      <div className="flex items-center mb-6">
-        <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mr-4">
-          <Icon className="w-6 h-6 text-indigo-600" />
+  <div className="min-h-screen bg-white flex flex-col">
+    <ProgressBar current={currentStep} total={totalSteps} />
+    <div className="flex-1 flex items-center justify-center p-6 pt-16">
+      <div className="max-w-lg w-full">
+        <div className="mb-8">
+          <div className="w-16 h-16 mx-auto mb-6">
+            {animationData ? (
+              <Lottie 
+                animationData={animationData} 
+                style={{width: '100%', height: '100%'}} 
+                loop={true}
+              />
+            ) : (
+              <div className="w-full h-full bg-green-100 rounded-2xl flex items-center justify-center">
+                <Icon className="w-8 h-8 text-green-600" />
+              </div>
+            )}
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 text-center mb-8 leading-relaxed">
+            {title}
+          </h2>
+          <div className="mb-12">{children}</div>
+          <div className="flex gap-4">
+            <button
+              onClick={onPrev}
+              className="flex items-center justify-center w-12 h-12 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-all duration-200"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <div className="flex-1">
+              {isLast ? (
+                <button
+                  onClick={onFinish}
+                  disabled={!canProceed || isSubmitting}
+                  className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold py-4 px-6 rounded-2xl text-lg transition-all duration-200 transform hover:scale-105 disabled:transform-none shadow-lg hover:shadow-xl disabled:shadow-none"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Completing...
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <Check className="w-5 h-5 mr-2" />
+                      Complete Setup
+                    </div>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={onNext}
+                  disabled={!canProceed}
+                  className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold py-4 px-6 rounded-2xl text-lg transition-all duration-200 transform hover:scale-105 disabled:transform-none shadow-lg hover:shadow-xl disabled:shadow-none"
+                >
+                  Continue
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-      </div>
-      <div className="mb-8">{children}</div>
-      <div className="flex justify-between">
-        <button
-          onClick={onPrev}
-          className="flex items-center px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 mr-2" />
-          Previous
-        </button>
-        {isLast ? (
-          <button
-            onClick={onFinish}
-            disabled={!canProceed || isSubmitting}
-            className="bg-green-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isSubmitting ? "Completing..." : "Complete Setup! 🎉"}
-          </button>
-        ) : (
-          <button
-            onClick={onNext}
-            disabled={!canProceed}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
-          >
-            Next
-            <ChevronRight className="w-5 h-5 ml-2" />
-          </button>
-        )}
       </div>
     </div>
   </div>
@@ -203,17 +308,44 @@ const RestaurantSteps = ({
   handleFinalSubmit: () => void;
   isSubmitting: boolean;
 }) => {
+  const [animations, setAnimations] = useState<any>({});
+
+  useEffect(() => {
+    const loadAnimations = async () => {
+      const animationNames = [
+        'restaurant', 'location-pin', 'dining-table', 
+        'customers', 'whatsapp', 'payment'
+      ];
+      const loadedAnimations: any = {};
+      
+      for (const name of animationNames) {
+        try {
+          const response = await fetch(`/animations/${name}.json`);
+          const data = await response.json();
+          loadedAnimations[name] = data;
+        } catch (err) {
+          console.warn(`Failed to load ${name} animation:`, err);
+        }
+      }
+      
+      setAnimations(loadedAnimations);
+    };
+
+    loadAnimations();
+  }, []);
+
   const steps = [
     {
       icon: Building2,
       title: "What's your restaurant called?",
+      animationData: animations['restaurant'],
       render: () => (
         <input
           type="text"
           value={businessData.businessName || ""}
           onChange={(e) => updateData("businessName", e.target.value)}
-          placeholder="e.g., Mario's Pizza Palace"
-          className="w-full p-4 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Enter your restaurant name"
+          className="w-full p-4 border-2 border-gray-200 rounded-2xl text-lg focus:outline-none focus:border-green-400 transition-colors bg-gray-50 focus:bg-white"
           autoFocus
         />
       ),
@@ -222,12 +354,13 @@ const RestaurantSteps = ({
     {
       icon: MapPin,
       title: "Where is your restaurant located?",
+      animationData: animations['location-pin'],
       render: () => (
         <textarea
           value={businessData.businessAddress || ""}
           onChange={(e) => updateData("businessAddress", e.target.value)}
           placeholder="Enter your complete business address"
-          className="w-full p-4 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 h-32 resize-none"
+          className="w-full p-4 border-2 border-gray-200 rounded-2xl text-lg focus:outline-none focus:border-green-400 transition-colors bg-gray-50 focus:bg-white h-32 resize-none"
           autoFocus
         />
       ),
@@ -236,6 +369,7 @@ const RestaurantSteps = ({
     {
       icon: Utensils,
       title: "How many tables do you have?",
+      animationData: animations['dining-table'],
       render: () => (
         <input
           type="number"
@@ -243,9 +377,9 @@ const RestaurantSteps = ({
           onChange={(e) =>
             updateData("numberOfTables", parseInt(e.target.value) || 0)
           }
-          placeholder="e.g., 15"
+          placeholder="Number of tables"
           min="1"
-          className="w-full p-4 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full p-4 border-2 border-gray-200 rounded-2xl text-lg focus:outline-none focus:border-green-400 transition-colors bg-gray-50 focus:bg-white"
           autoFocus
         />
       ),
@@ -254,6 +388,7 @@ const RestaurantSteps = ({
     {
       icon: Users,
       title: "How many customers visit daily on average?",
+      animationData: animations['customers'],
       render: () => (
         <div>
           <input
@@ -265,12 +400,12 @@ const RestaurantSteps = ({
                 parseInt(e.target.value) || 0
               )
             }
-            placeholder="e.g., 150"
+            placeholder="Average daily customers"
             min="0"
-            className="w-full p-4 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full p-4 border-2 border-gray-200 rounded-2xl text-lg focus:outline-none focus:border-green-400 transition-colors bg-gray-50 focus:bg-white"
             autoFocus
           />
-          <p className="text-gray-600 text-sm mt-2">
+          <p className="text-gray-500 text-sm mt-3 text-center">
             This helps us provide better analytics (optional)
           </p>
         </div>
@@ -280,22 +415,26 @@ const RestaurantSteps = ({
     {
       icon: Smartphone,
       title: "Do you want WhatsApp Order Integration?",
+      animationData: animations['whatsapp'],
       render: () => (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[
-            { value: true, label: "✅ Yes, enable WhatsApp orders!" },
-            { value: false, label: "❌ No, maybe later" },
+            { value: true, label: "Yes, enable WhatsApp orders", emoji: "✅" },
+            { value: false, label: "No, maybe later", emoji: "❌" },
           ].map((option) => (
             <button
               key={String(option.value)}
               onClick={() => updateData("whatsappOrderIntegration", option.value)}
-              className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+              className={`w-full p-4 rounded-2xl border-2 text-left transition-all transform hover:scale-102 ${
                 businessData.whatsappOrderIntegration === option.value
-                  ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                  : "border-gray-300 hover:border-gray-400"
+                  ? "border-green-400 bg-green-50 shadow-md"
+                  : "border-gray-200 bg-gray-50 hover:border-gray-300"
               }`}
             >
-              {option.label}
+              <div className="flex items-center">
+                <span className="text-2xl mr-3">{option.emoji}</span>
+                <span className="font-medium">{option.label}</span>
+              </div>
             </button>
           ))}
         </div>
@@ -305,30 +444,42 @@ const RestaurantSteps = ({
     {
       icon: CreditCard,
       title: "What payment methods do you accept?",
+      animationData: animations['payment'],
       render: () => {
-        const methods = ["Cash", "UPI", "Card", "Mixed"];
+        const methods = [
+          { name: "Cash", emoji: "💵" },
+          { name: "UPI", emoji: "📱" },
+          { name: "Card", emoji: "💳" },
+          { name: "Mixed", emoji: "🔄" }
+        ];
         const selected = businessData.paymentMethods || [];
         return (
           <div className="space-y-3">
             {methods.map((method) => (
               <button
-                key={method}
+                key={method.name}
                 onClick={() => {
-                  const newMethods = selected.includes(method)
-                    ? selected.filter((m: string) => m !== method)
-                    : [...selected, method];
+                  const newMethods = selected.includes(method.name)
+                    ? selected.filter((m: string) => m !== method.name)
+                    : [...selected, method.name];
                   updateData("paymentMethods", newMethods);
                 }}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                  selected.includes(method)
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                    : "border-gray-300 hover:border-gray-400"
+                className={`w-full p-4 rounded-2xl border-2 text-left transition-all transform hover:scale-102 ${
+                  selected.includes(method.name)
+                    ? "border-green-400 bg-green-50 shadow-md"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300"
                 }`}
               >
-                {selected.includes(method) ? "✅" : "⚪"} {method}
+                <div className="flex items-center">
+                  <span className="text-2xl mr-3">{method.emoji}</span>
+                  <span className="font-medium">{method.name}</span>
+                  {selected.includes(method.name) && (
+                    <Check className="w-5 h-5 text-green-600 ml-auto" />
+                  )}
+                </div>
               </button>
             ))}
-            <p className="text-gray-600 text-sm mt-2">Select all that apply</p>
+            <p className="text-gray-500 text-sm mt-4 text-center">Select all that apply</p>
           </div>
         );
       },
@@ -350,11 +501,15 @@ const RestaurantSteps = ({
       canProceed={step.canProceed()}
       onFinish={handleFinalSubmit}
       isSubmitting={isSubmitting}
+      currentStep={currentStep}
+      totalSteps={8}
+      animationData={step.animationData}
     >
       {step.render()}
     </QuestionCard>
   );
 };
+
 /* =========================================================
    DAIRY STEPS
 ========================================================= */
@@ -376,17 +531,41 @@ const DairySteps = ({
   handleFinalSubmit: () => void;
   isSubmitting: boolean;
 }) => {
+  const [animations, setAnimations] = useState<any>({});
+
+  useEffect(() => {
+    const loadAnimations = async () => {
+      const animationNames = ['dairy', 'location-pin', 'dairy-products'];
+      const loadedAnimations: any = {};
+      
+      for (const name of animationNames) {
+        try {
+          const response = await fetch(`/animations/${name}.json`);
+          const data = await response.json();
+          loadedAnimations[name] = data;
+        } catch (err) {
+          console.warn(`Failed to load ${name} animation:`, err);
+        }
+      }
+      
+      setAnimations(loadedAnimations);
+    };
+
+    loadAnimations();
+  }, []);
+
   const steps = [
     {
       icon: Milk,
       title: "What's your dairy business called?",
+      animationData: animations['dairy'],
       render: () => (
         <input
           type="text"
           value={businessData.businessName || ""}
           onChange={(e) => updateData("businessName", e.target.value)}
-          placeholder="e.g., Fresh Valley Dairy"
-          className="w-full p-4 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Enter your dairy business name"
+          className="w-full p-4 border-2 border-gray-200 rounded-2xl text-lg focus:outline-none focus:border-green-400 transition-colors bg-gray-50 focus:bg-white"
           autoFocus
         />
       ),
@@ -395,12 +574,13 @@ const DairySteps = ({
     {
       icon: MapPin,
       title: "Where is your dairy business located?",
+      animationData: animations['location-pin'],
       render: () => (
         <textarea
           value={businessData.businessAddress || ""}
           onChange={(e) => updateData("businessAddress", e.target.value)}
           placeholder="Enter your complete business address"
-          className="w-full p-4 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 h-32 resize-none"
+          className="w-full p-4 border-2 border-gray-200 rounded-2xl text-lg focus:outline-none focus:border-green-400 transition-colors bg-gray-50 focus:bg-white h-32 resize-none"
           autoFocus
         />
       ),
@@ -409,34 +589,39 @@ const DairySteps = ({
     {
       icon: Milk,
       title: "What products do you sell?",
+      animationData: animations['dairy-products'],
       render: () => {
         const products = [
-          "Milk",
-          "Paneer",
-          "Curd",
-          "Ice Cream",
-          "Butter",
-          "Cheese",
+          { name: "Milk", emoji: "🥛" },
+          { name: "Paneer", emoji: "🧀" },
+          { name: "Curd", emoji: "🥣" },
+          { name: "Ice Cream", emoji: "🍦" },
+          { name: "Butter", emoji: "🧈" },
+          { name: "Cheese", emoji: "🧀" },
         ];
         const selected = businessData.productsSold || [];
         return (
           <div className="grid grid-cols-2 gap-3">
             {products.map((product) => (
               <button
-                key={product}
+                key={product.name}
                 onClick={() => {
-                  const newProducts = selected.includes(product)
-                    ? selected.filter((p: string) => p !== product)
-                    : [...selected, product];
+                  const newProducts = selected.includes(product.name)
+                    ? selected.filter((p: string) => p !== product.name)
+                    : [...selected, product.name];
                   updateData("productsSold", newProducts);
                 }}
-                className={`p-3 rounded-xl border-2 text-center transition-all ${
-                  selected.includes(product)
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                    : "border-gray-300 hover:border-gray-400"
+                className={`p-4 rounded-2xl border-2 text-center transition-all transform hover:scale-105 ${
+                  selected.includes(product.name)
+                    ? "border-green-400 bg-green-50 shadow-md"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300"
                 }`}
               >
-                {selected.includes(product) ? "✅" : "⚪"} {product}
+                <div className="text-2xl mb-2">{product.emoji}</div>
+                <div className="font-medium text-sm">{product.name}</div>
+                {selected.includes(product.name) && (
+                  <Check className="w-4 h-4 text-green-600 mx-auto mt-1" />
+                )}
               </button>
             ))}
           </div>
@@ -460,6 +645,9 @@ const DairySteps = ({
       canProceed={step.canProceed()}
       onFinish={handleFinalSubmit}
       isSubmitting={isSubmitting}
+      currentStep={currentStep}
+      totalSteps={5}
+      animationData={step.animationData}
     >
       {step.render()}
     </QuestionCard>
@@ -487,46 +675,76 @@ const OtherBusinessSteps = ({
   handleFinalSubmit: () => void;
   isSubmitting: boolean;
 }) => {
+  const [animations, setAnimations] = useState<any>({});
+
+  useEffect(() => {
+    const loadAnimations = async () => {
+      const animationNames = ['store', 'store-types'];
+      const loadedAnimations: any = {};
+      
+      for (const name of animationNames) {
+        try {
+          const response = await fetch(`/animations/${name}.json`);
+          const data = await response.json();
+          loadedAnimations[name] = data;
+        } catch (err) {
+          console.warn(`Failed to load ${name} animation:`, err);
+        }
+      }
+      
+      setAnimations(loadedAnimations);
+    };
+
+    loadAnimations();
+  }, []);
+
   const steps = [
     {
       icon: Store,
       title: "What's your business called?",
+      animationData: animations['store'],
       render: () => (
         <input
           type="text"
           value={businessData.businessName || ""}
           onChange={(e) => updateData("businessName", e.target.value)}
-          placeholder="e.g., City Mall Electronics"
-          className="w-full p-4 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Enter your business name"
+          className="w-full p-4 border-2 border-gray-200 rounded-2xl text-lg focus:outline-none focus:border-green-400 transition-colors bg-gray-50 focus:bg-white"
+          autoFocus
         />
       ),
       canProceed: () => Boolean(businessData.businessName?.trim()),
     },
     {
-      icon: Store,
+      icon: ShoppingBag,
       title: "What type of store do you run?",
+      animationData: animations['store-types'],
       render: () => {
         const storeTypes = [
-          "Mall",
-          "Grocery",
-          "Electronics",
-          "Clothing",
-          "Pharmacy",
-          "Other",
+          { name: "Mall", emoji: "🏬" },
+          { name: "Grocery", emoji: "🛒" },
+          { name: "Electronics", emoji: "📱" },
+          { name: "Clothing", emoji: "👕" },
+          { name: "Pharmacy", emoji: "💊" },
+          { name: "Other", emoji: "🏪" },
         ];
         return (
           <div className="grid grid-cols-2 gap-3">
             {storeTypes.map((type) => (
               <button
-                key={type}
-                onClick={() => updateData("storeType", type)}
-                className={`p-4 rounded-xl border-2 text-center transition-all ${
-                  businessData.storeType === type
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                    : "border-gray-300 hover:border-gray-400"
+                key={type.name}
+                onClick={() => updateData("storeType", type.name)}
+                className={`p-4 rounded-2xl border-2 text-center transition-all transform hover:scale-105 ${
+                  businessData.storeType === type.name
+                    ? "border-green-400 bg-green-50 shadow-md"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300"
                 }`}
               >
-                {businessData.storeType === type ? "✅" : "⚪"} {type}
+                <div className="text-2xl mb-2">{type.emoji}</div>
+                <div className="font-medium text-sm">{type.name}</div>
+                {businessData.storeType === type.name && (
+                  <Check className="w-4 h-4 text-green-600 mx-auto mt-1" />
+                )}
               </button>
             ))}
           </div>
@@ -550,24 +768,32 @@ const OtherBusinessSteps = ({
       canProceed={step.canProceed()}
       onFinish={handleFinalSubmit}
       isSubmitting={isSubmitting}
+      currentStep={currentStep}
+      totalSteps={4}
+      animationData={step.animationData}
     >
       {step.render()}
     </QuestionCard>
   );
 };
+
 /* =========================================================
    DEMO MODE
 ========================================================= */
 const DemoMode = () => (
-  <div className="min-h-screen bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center p-4">
-    <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 max-w-2xl w-full text-center border border-white/20 shadow-2xl">
-      <div className="animate-spin w-16 h-16 border-4 border-white/30 border-t-white rounded-full mx-auto mb-6"></div>
-      <h2 className="text-3xl font-bold text-white mb-4">
-        Setting up your demo experience...
+  <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+    <div className="max-w-md w-full text-center">
+      <div className="relative mb-8">
+        <div className="w-20 h-20 border-4 border-green-200 border-t-green-500 rounded-full animate-spin mx-auto"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Code className="w-8 h-8 text-green-600" />
+        </div>
+      </div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        Setting up your demo experience
       </h2>
-      <p className="text-white/80 text-lg">
-        We're preparing sample data from restaurants, dairies, and retail stores
-        for you to explore!
+      <p className="text-gray-600">
+        We're preparing sample data from restaurants, dairies, and retail stores for you to explore
       </p>
     </div>
   </div>
@@ -577,26 +803,15 @@ const DemoMode = () => (
    MAIN ONBOARDING FLOW COMPONENT
 ========================================================= */
 const OnboardingFlow: React.FC = () => {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  // Demo simulation - replace these with your actual hooks
+  const session = { user: { isOnboardingComplete: false } };
+  const status = "authenticated" as "loading" | "authenticated" | "unauthenticated";
 
   // State
   const [selectedSuite, setSelectedSuite] = useState<string | null>(null);
   const [businessData, setBusinessData] = useState<any>({});
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  /* ----------------- Redirect logic ----------------- */
-  useEffect(() => {
-    if (status === "loading") return;
-    if (status === "unauthenticated" || !session) {
-      router.replace("/new/login");
-      return;
-    }
-    if ((session.user as any).isOnboardingComplete) {
-      router.replace("/dashboard");
-    }
-  }, [session, status, router]);
 
   /* ----------------- Demo reset ----------------- */
   useEffect(() => {
@@ -628,14 +843,17 @@ const OnboardingFlow: React.FC = () => {
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
     try {
+      // Simulate delay
       await new Promise((resolve) => setTimeout(resolve, 1500));
+
       console.log("Onboarding data:", { selectedSuite, businessData });
-      alert("Onboarding completed successfully! (Demo)");
+
+      alert("Onboarding completed successfully!");
       setSelectedSuite(null);
       setBusinessData({});
       setCurrentStep(0);
-      window.location.href = "/dashboard";
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -645,16 +863,36 @@ const OnboardingFlow: React.FC = () => {
   /* ----------------- Conditional render ----------------- */
   if (status === "loading" || !session) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen bg-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-lg">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
-
-  if ((session.user as any).isOnboardingComplete) return null;
+  if (status === "unauthenticated" || !session.user){
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-white">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p className="text-gray-600 mb-6">
+            You must be logged in to access the onboarding flow.
+          </p>
+          <button
+            onClick={() => window.location.href = "/new/login"}
+            className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+          >
+            Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (session.user.isOnboardingComplete) {
+    window.location.href = "/dashboard";
+    return null;
+  }
 
   if (currentStep === 0) return <WelcomeCard onNext={nextStep} />;
   if (currentStep === 1) return <SuiteSelector onSelect={selectSuite} />;
@@ -701,11 +939,24 @@ const OnboardingFlow: React.FC = () => {
     );
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-4">
-          Onboarding goes here!
+          Onboarding Complete!
         </h2>
+        <p className="text-gray-600 mb-6">
+          Welcome to BizTracker. Your business profile has been set up successfully.
+        </p>
+        <button
+          onClick={() => {
+            setSelectedSuite(null);
+            setBusinessData({});
+            setCurrentStep(0);
+          }}
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+        >
+          Start Over
+        </button>
       </div>
     </div>
   );
