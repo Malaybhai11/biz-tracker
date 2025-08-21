@@ -843,18 +843,42 @@ const OnboardingFlow: React.FC = () => {
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Simulate delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Make API call to save onboarding data
+      const response = await fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          selectedSuite,
+          businessData,
+        }),
+      });
 
-      console.log("Onboarding data:", { selectedSuite, businessData });
+      const result = await response.json();
 
-      alert("Onboarding completed successfully!");
-      setSelectedSuite(null);
-      setBusinessData({});
-      setCurrentStep(0);
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong. Please try again.");
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to complete onboarding');
+      }
+
+      // Success - onboarding completed and user flag updated
+      console.log("Onboarding completed successfully:", result);
+      
+      // Show success message
+      alert("Onboarding completed successfully! Welcome to BizTracker!");
+      
+      // Redirect to dashboard since onboarding is now complete
+      window.location.href = "/dashboard";
+      
+    } catch (error) {
+      console.error('Onboarding error:', error);
+      
+      // Show user-friendly error message
+      alert(
+        error instanceof Error 
+          ? `Error: ${error.message}` 
+          : "Something went wrong. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -889,6 +913,7 @@ const OnboardingFlow: React.FC = () => {
       </div>
     );
   }
+  console.log("Boolean onboarding complete:", session.user.isOnboardingComplete);
   if (session.user.isOnboardingComplete) {
     window.location.href = "/dashboard";
     return null;
