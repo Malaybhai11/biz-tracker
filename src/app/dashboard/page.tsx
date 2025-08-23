@@ -26,37 +26,164 @@ import {
 } from "lucide-react";
 import { useSession } from 'next-auth/react';
 
+// Types for better type safety
+interface UserBusiness {
+  businessName: string;
+  businessType: string;
+  businessAddress: string | null;
+  // Restaurant specific
+  numberOfTables?: number | null;
+  averageDailyCustomers?: number | null;
+  // Dairy specific
+  numberOfRiders?: number | null;
+  productsSold?: string[];
+  // Other business specific
+  numberOfSKUs?: number | null;
+  storeType?: string | null;
+}
+
+interface DashboardData {
+  user: {
+    name: string;
+    email: string;
+    selectedSuite: string;
+  };
+  business: UserBusiness | null;
+  isLoading: boolean;
+}
+
 export default function BizTrackerDashboard() {
-
-  const session = useSession();
-  console.log(session);
-  const [greeting, setGreeting] = useState('');
-  // Mock user data - in real app this would come from session/database
-  const [user] = useState({
-    name: session.data?.user.name || 'Gentle User',
-    selectedSuite: 'User.Selected', // Can be 'restaurant', 'dairy', 'other', or 'demo'
-    business: {
-      businessName: 'Malay\'s Kitchen',
-      businessType: 'restaurant'
-    }
+  const { data: session, status } = useSession();
+  const [greeting, setGreeting] = useState("");
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    user: { name: '', email: '', selectedSuite: '' },
+    business: null,
+    isLoading: true
   });
-  
-  const currentTime = new Date();
 
+  // Fetch user business data
+  const fetchDashboardData = async () => {
+    if (!session?.user?.email) return;
+    
+    try {
+      setDashboardData(prev => ({ ...prev, isLoading: true }));
+      
+      const response = await fetch('/api/dashboard/user-data', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+      
+      const data = await response.json();
+      
+      setDashboardData({
+        user: {
+          name: data.user.name || session.user.name || 'User',
+          email: data.user.email,
+          selectedSuite: data.user.selectedSuite || 'demo'
+        },
+        business: data.business,
+        isLoading: false
+      });
+      
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Fallback to session data
+      setDashboardData({
+        user: {
+          name: session.user.name || 'User',
+          email: session.user.email || '',
+          selectedSuite: 'demo'
+        },
+        business: null,
+        isLoading: false
+      });
+    }
+  };
+
+  // Set greeting based on time and user name
   useEffect(() => {
-    const hour = currentTime.getHours();
+    if (!dashboardData.user.name) return;
+
+    const firstName = dashboardData.user.name.split(' ')[0];
+    const hour = new Date().getHours();
+    
     const greetings = [
-      { condition: hour < 12, messages: ['Good morning, Malay! ☀️', 'Hey Malay, ready to conquer today? 🚀', 'Morning sunshine, Malay! ✨'] },
-      { condition: hour < 17, messages: ['Good afternoon, Malay! 🌤️', 'Hey Malay, crushing it today! 💪', 'Afternoon warrior, Malay! ⚡'] },
-      { condition: hour >= 17, messages: ['Good evening, Malay! 🌙', 'Hey Malay, winding down nicely! 🌆', 'Evening champion, Malay! 🌟'] }
+      {
+        condition: hour < 12,
+        messages: [
+          `Good morning, ${firstName}! ☀️`,
+          `Hey ${firstName}, ready to conquer today? 🚀`,
+          `Morning sunshine, ${firstName}! ✨`,
+        ],
+      },
+      {
+        condition: hour < 17,
+        messages: [
+          `Good afternoon, ${firstName}! 🌤️`,
+          `Hey ${firstName}, crushing it today! 💪`,
+          `Afternoon warrior, ${firstName}! ⚡`,
+        ],
+      },
+      {
+        condition: hour >= 17,
+        messages: [
+          `Good evening, ${firstName}! 🌙`,
+          `Hey ${firstName}, winding down nicely! 🌆`,
+          `Evening champion, ${firstName}! 🌟`,
+        ],
+      },
     ];
 
-    const currentGreeting = greetings.find(g => g.condition);
-    if (currentGreeting) {
-      const randomMessage = currentGreeting.messages[Math.floor(Math.random() * currentGreeting.messages.length)];
+    const currentGreeting = greetings.find((g) => g.condition);
+    if (currentGreeting && currentGreeting.messages.length > 0) {
+      const randomMessage =
+        currentGreeting.messages[
+          Math.floor(Math.random() * currentGreeting.messages.length)
+        ];
       setGreeting(randomMessage);
     }
-  }, []);
+  }, [dashboardData.user.name]);
+
+  // Fetch data when session is ready
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      fetchDashboardData();
+    }
+  }, [session, status]);
+
+  // Show loading state
+  if (status === 'loading' || dashboardData.isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-black flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold">Loading your dashboard...</h2>
+          <p className="text-blue-200 mt-2">Preparing your personalized experience</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-black flex items-center justify-center">
+        <div className="text-center text-white">
+          <h1 className="text-3xl font-bold mb-4">Welcome to BizTracker</h1>
+          <p className="text-blue-200 mb-8">Please log in to access your personalized dashboard.</p>
+          <button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-8 py-3 rounded-xl text-white font-semibold transition-all duration-300">
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   interface Metric {
     title: string;
@@ -66,7 +193,7 @@ export default function BizTrackerDashboard() {
     color: string;
   }
 
-  const getMetricsForSuite = (suiteType: string): Metric[] => {
+  const getMetricsForSuite = (suiteType: string, businessData: UserBusiness | null): Metric[] => {
     const baseMetrics: Metric[] = [
       { title: 'Total Inventory Items', value: '1,247', change: '+12.5%', icon: Package, color: 'from-blue-400 to-blue-600' },
       { title: "Today's Sales", value: '₹24,689', change: '+8.2%', icon: DollarSign, color: 'from-green-400 to-green-600' }
@@ -74,21 +201,45 @@ export default function BizTrackerDashboard() {
 
     switch (suiteType) {
       case 'restaurant':
+        const totalTables = businessData?.numberOfTables || 25;
+        const activeTables = Math.floor(totalTables * 0.72); // 72% occupancy
         return [
           ...baseMetrics,
-          { title: 'Active Tables', value: '18/25', change: '+5.1%', icon: Utensils, color: 'from-purple-400 to-purple-600' },
+          { 
+            title: 'Active Tables', 
+            value: `${activeTables}/${totalTables}`, 
+            change: '+5.1%', 
+            icon: Utensils, 
+            color: 'from-purple-400 to-purple-600' 
+          },
           { title: 'Pending Orders', value: '156', change: '+15.3%', icon: ShoppingCart, color: 'from-orange-400 to-orange-600' }
         ];
       case 'dairy':
+        const totalRiders = businessData?.numberOfRiders || 25;
+        const activeRiders = Math.floor(totalRiders * 0.92); // 92% active
         return [
           ...baseMetrics,
-          { title: 'Active Riders', value: '23', change: '+5.1%', icon: Truck, color: 'from-purple-400 to-purple-600' },
+          { 
+            title: 'Active Riders', 
+            value: `${activeRiders}`, 
+            change: '+5.1%', 
+            icon: Truck, 
+            color: 'from-purple-400 to-purple-600' 
+          },
           { title: 'Pending Deliveries', value: '156', change: '+15.3%', icon: ShoppingCart, color: 'from-orange-400 to-orange-600' }
         ];
       case 'other':
+        const totalSKUs = businessData?.numberOfSKUs || 1000;
+        const inStockSKUs = Math.floor(totalSKUs * 0.89); // 89% in stock
         return [
           ...baseMetrics,
-          { title: 'SKUs in Stock', value: '892', change: '+3.2%', icon: Package, color: 'from-purple-400 to-purple-600' },
+          { 
+            title: 'SKUs in Stock', 
+            value: `${inStockSKUs}`, 
+            change: '+3.2%', 
+            icon: Package, 
+            color: 'from-purple-400 to-purple-600' 
+          },
           { title: 'Pending Orders', value: '45', change: '+8.7%', icon: ShoppingCart, color: 'from-orange-400 to-orange-600' }
         ];
       default:
@@ -177,8 +328,8 @@ export default function BizTrackerDashboard() {
     }
   };
 
-  const getSuiteDisplayName = (suiteType: 'restaurant' | 'dairy' | 'other' | 'demo') => {
-    const names = {
+  const getSuiteDisplayName = (suiteType: string) => {
+    const names: Record<string, string> = {
       'restaurant': 'Restaurant Management',
       'dairy': 'Dairy Operations',
       'other': 'Business Management',
@@ -187,13 +338,31 @@ export default function BizTrackerDashboard() {
     return names[suiteType] || 'Business Management';
   };
 
-  const metrics = getMetricsForSuite(user.selectedSuite);
-  const features = getFeaturesForSuite(user.selectedSuite);
-  const recentActivities = getRecentActivitiesForSuite(user.selectedSuite);
+  const getBusinessDisplayInfo = (business: UserBusiness | null, selectedSuite: string) => {
+    if (!business) {
+      return {
+        name: 'BizTracker',
+        address: 'Jamnagar, Gujarat',
+        description: 'Complete your business setup to see personalized information.'
+      };
+    }
+
+    return {
+      name: business.businessName,
+      address: business.businessAddress || 'Jamnagar, Gujarat',
+      description: `Managing your ${business.businessType} operations with BizTracker.`
+    };
+  };
+
+  const metrics = getMetricsForSuite(dashboardData.user.selectedSuite, dashboardData.business);
+  const features = getFeaturesForSuite(dashboardData.user.selectedSuite);
+  const recentActivities = getRecentActivitiesForSuite(dashboardData.user.selectedSuite);
+  const businessInfo = getBusinessDisplayInfo(dashboardData.business, dashboardData.user.selectedSuite);
+  const currentTime = new Date();
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Styles */}
+      {/* Background styles remain the same */}
       <style jsx>{`
         @keyframes twinkle {
           0%, 100% { opacity: 0.3; transform: scale(1); }
@@ -326,16 +495,15 @@ export default function BizTrackerDashboard() {
         }
       `}</style>
 
-      {/* Background */}
+      {/* Background remains the same */}
       <div className="fixed inset-0 bg-gradient-to-b from-gray-900 via-blue-900 to-black overflow-hidden pointer-events-none z-0">
-        {/* Nebula clouds */}
+        {/* All background elements remain the same */}
         <div className="absolute inset-0">
           <div className="nebula absolute top-10 left-10 w-96 h-96 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-full blur-3xl" />
           <div className="nebula absolute top-32 right-20 w-80 h-80 bg-gradient-to-r from-pink-500/10 to-indigo-500/10 rounded-full blur-3xl" style={{animationDelay: '5s'}} />
           <div className="nebula absolute bottom-20 left-1/3 w-72 h-72 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-full blur-3xl" style={{animationDelay: '10s'}} />
         </div>
 
-        {/* Twinkling stars */}
         <div className="absolute inset-0">
           {[...Array(150)].map((_, i) => (
             <div
@@ -354,7 +522,6 @@ export default function BizTrackerDashboard() {
           ))}
         </div>
 
-        {/* Floating orbs */}
         <div className="absolute inset-0">
           {[...Array(6)].map((_, i) => (
             <div
@@ -372,7 +539,6 @@ export default function BizTrackerDashboard() {
           ))}
         </div>
 
-        {/* Glow dots */}
         <div className="absolute inset-0">
           {[...Array(12)].map((_, i) => (
             <div
@@ -390,7 +556,6 @@ export default function BizTrackerDashboard() {
           ))}
         </div>
 
-        {/* Drifting particles */}
         <div className="absolute inset-0">
           {[...Array(15)].map((_, i) => (
             <div
@@ -418,7 +583,7 @@ export default function BizTrackerDashboard() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">BizTracker</h1>
-                <p className="text-blue-200 text-sm">{getSuiteDisplayName(user.selectedSuite as 'restaurant' | 'dairy' | 'other' | 'demo')}</p>
+                <p className="text-blue-200 text-sm">{getSuiteDisplayName(dashboardData.user.selectedSuite)}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -442,7 +607,7 @@ export default function BizTrackerDashboard() {
               <div>
                 <h2 className="text-4xl font-bold text-white mb-2">{greeting}</h2>
                 <p className="text-blue-200 text-lg">
-                  Welcome back to your {user.business?.businessName || 'BizTracker'} dashboard. Here's what's happening with your {getSuiteDisplayName(user.selectedSuite as 'restaurant' | 'dairy' | 'other' | 'demo').toLowerCase()} today.
+                  Welcome back to your <span className="text-white font-semibold">{businessInfo.name}</span> dashboard. {businessInfo.description}
                 </p>
                 <div className="mt-4 flex items-center space-x-4 text-blue-300">
                   <span className="flex items-center">
@@ -456,9 +621,16 @@ export default function BizTrackerDashboard() {
                   </span>
                   <span className="flex items-center">
                     <MapPin className="w-4 h-4 mr-1" />
-                    Jamnagar, Gujarat
+                    {businessInfo.address}
                   </span>
                 </div>
+                {!dashboardData.business && (
+                  <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+                    <p className="text-yellow-300 text-sm">
+                      💡 Complete your business setup to unlock personalized features and insights!
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="hidden lg:flex items-center space-x-4">
                 <button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300 transform hover:scale-105">
@@ -568,6 +740,41 @@ export default function BizTrackerDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Business Info Card */}
+          {dashboardData.business && (
+            <div className="glass-card p-6 rounded-2xl">
+              <h3 className="text-xl font-bold text-white mb-4">Business Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-white">{dashboardData.business.businessName}</p>
+                  <p className="text-blue-200 text-sm">Business Name</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-purple-400">{dashboardData.business.businessType.charAt(0).toUpperCase() + dashboardData.business.businessType.slice(1)}</p>
+                  <p className="text-blue-200 text-sm">Business Type</p>
+                </div>
+                {dashboardData.user.selectedSuite === 'restaurant' && dashboardData.business.numberOfTables && (
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-orange-400">{dashboardData.business.numberOfTables}</p>
+                    <p className="text-blue-200 text-sm">Total Tables</p>
+                  </div>
+                )}
+                {dashboardData.user.selectedSuite === 'dairy' && dashboardData.business.numberOfRiders && (
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-400">{dashboardData.business.numberOfRiders}</p>
+                    <p className="text-blue-200 text-sm">Total Riders</p>
+                  </div>
+                )}
+                {dashboardData.user.selectedSuite === 'other' && dashboardData.business.numberOfSKUs && (
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-cyan-400">{dashboardData.business.numberOfSKUs}+</p>
+                    <p className="text-blue-200 text-sm">SKUs</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Footer Message */}
           <div className="glass-card p-6 rounded-2xl text-center">
