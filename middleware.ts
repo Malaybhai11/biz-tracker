@@ -8,7 +8,7 @@ export default withAuth(
     const token = req.nextauth.token
 
     // Public routes that don't require authentication
-    const publicRoutes = ['/new/login', '/new/signup', '/']
+    const publicRoutes = ['/new/login', '/new/signup', '/',"/Demo"]
     
     if (publicRoutes.includes(pathname)) {
       return NextResponse.next()

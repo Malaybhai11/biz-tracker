@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
@@ -24,8 +23,6 @@ import {
   Utensils,
   Coffee
 } from "lucide-react";
-import { useSession } from 'next-auth/react';
-import Link from 'next/link';
 
 // Types for better type safety
 interface UserBusiness {
@@ -50,67 +47,31 @@ interface DashboardData {
     selectedSuite: string;
   };
   business: UserBusiness | null;
-  isLoading: boolean;
 }
 
+// Hardcoded demo data
+const DEMO_DASHBOARD_DATA: DashboardData = {
+  user: {
+    name: 'John Doe',
+    email: 'john@example.com',
+    selectedSuite: 'restaurant' // Change to 'dairy' or 'other' to see different views
+  },
+  business: {
+    businessName: 'The Grand Restaurant',
+    businessType: 'restaurant',
+    businessAddress: '123 Main Street, Cityville',
+    numberOfTables: 25,
+    averageDailyCustomers: 120
+  }
+};
+
 export default function BizTrackerDashboard() {
-  const { data: session, status } = useSession();
   const [greeting, setGreeting] = useState("");
-  const [dashboardData, setDashboardData] = useState<DashboardData>({
-    user: { name: '', email: '', selectedSuite: '' },
-    business: null,
-    isLoading: true
-  });
-
-  // Fetch user business data
-  const fetchDashboardData = async () => {
-    if (!session?.user?.email) return;
-    
-    try {
-      setDashboardData(prev => ({ ...prev, isLoading: true }));
-      
-      const response = await fetch('/api/dashboard/user-data', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
-      }
-      
-      const data = await response.json();
-      
-      setDashboardData({
-        user: {
-          name: data.user.name || session.user.name || 'User',
-          email: data.user.email,
-          selectedSuite: data.user.selectedSuite || 'demo'
-        },
-        business: data.business,
-        isLoading: false
-      });
-      
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      // Fallback to session data
-      setDashboardData({
-        user: {
-          name: session.user.name || 'User',
-          email: session.user.email || '',
-          selectedSuite: 'demo'
-        },
-        business: null,
-        isLoading: false
-      });
-    }
-  };
-
+  const [dashboardData, setDashboardData] = useState<DashboardData>(DEMO_DASHBOARD_DATA);
+  
   // Set greeting based on time and user name
   useEffect(() => {
     if (!dashboardData.user.name) return;
-
     const firstName = dashboardData.user.name.split(' ')[0];
     const hour = new Date().getHours();
     
@@ -140,7 +101,7 @@ export default function BizTrackerDashboard() {
         ],
       },
     ];
-
+    
     const currentGreeting = greetings.find((g) => g.condition);
     if (currentGreeting && currentGreeting.messages.length > 0) {
       const randomMessage =
@@ -150,41 +111,6 @@ export default function BizTrackerDashboard() {
       setGreeting(randomMessage);
     }
   }, [dashboardData.user.name]);
-
-  // Fetch data when session is ready
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      fetchDashboardData();
-    }
-  }, [session, status]);
-
-  // Show loading state
-  if (status === 'loading' || dashboardData.isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-black flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold">Loading your dashboard...</h2>
-          <p className="text-blue-200 mt-2">Preparing your personalized experience</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show login prompt
-  if (status === 'unauthenticated') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-black flex items-center justify-center">
-        <div className="text-center text-white">
-          <h1 className="text-3xl font-bold mb-4">Welcome to BizTracker</h1>
-          <p className="text-blue-200 mb-8">Please log in to access your personalized dashboard.</p>
-          <button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-8 py-3 rounded-xl text-white font-semibold transition-all duration-300">
-            Sign In
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   interface Metric {
     title: string;
@@ -213,7 +139,7 @@ export default function BizTrackerDashboard() {
             icon: Utensils, 
             color: 'from-purple-400 to-purple-600' 
           },
-          { title: 'Total Orders', value: '156', change: '+15.3%', icon: ShoppingCart, color: 'from-orange-400 to-orange-600' }
+          { title: 'Pending Orders', value: '156', change: '+15.3%', icon: ShoppingCart, color: 'from-orange-400 to-orange-600' }
         ];
       case 'dairy':
         const totalRiders = businessData?.numberOfRiders || 25;
@@ -252,45 +178,44 @@ export default function BizTrackerDashboard() {
     title: string;
     icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     desc: string;
-    path: string;
   }
 
-  
   const getFeaturesForSuite = (suiteType: string): Feature[] => {
     const baseFeatures: Feature[] = [
-      { title: 'Inventory Management', icon: Package, desc: 'Real-time stock tracking & alerts', path: '/dashboard/inventory-management' },
-      { title: 'Sales Analytics', icon: BarChart3, desc: 'Advanced reporting & insights', path: '/dashboard/sales-analytics' }
+      { title: 'Inventory Management', icon: Package, desc: 'Real-time stock tracking & alerts' },
+      { title: 'Sales Analytics', icon: BarChart3, desc: 'Advanced reporting & insights' }
     ];
 
     switch (suiteType) {
       case 'restaurant':
         return [
           ...baseFeatures,
-          { title: 'Table Management', icon: Utensils, desc: 'Real-time table status & reservations', path: '/dashboard/table-management' },
-          { title: 'Kitchen Display', icon: ChefHat, desc: 'Order priority & timing system', path: '/dashboard/kitchen-display' },
-          { title: 'Menu Management', icon: Coffee, desc: 'Dynamic pricing & availability', path: '/dashboard/menu-management' },
-          { title: 'WhatsApp Orders', icon: MessageSquare, desc: 'Direct order processing', path: '/dashboard/whatsapp-orders' }
+          { title: 'Table Management', icon: Utensils, desc: 'Real-time table status & reservations' },
+          { title: 'Kitchen Display', icon: ChefHat, desc: 'Order priority & timing system' },
+          { title: 'Menu Management', icon: Coffee, desc: 'Dynamic pricing & availability' },
+          { title: 'WhatsApp Orders', icon: MessageSquare, desc: 'Direct order processing' }
         ];
-      case 'dairy': // 🥛 dairy business suite
+      case 'dairy':
         return [
           ...baseFeatures,
-          { title: 'Rider Management', icon: Truck, desc: 'Live GPS & route optimization', path: '/dashboard/rider-management' },
-          { title: 'Delivery Tracking', icon: MapPin, desc: 'Real-time delivery updates', path: '/dashboard/delivery-tracking' },
-          { title: 'WhatsApp Bot', icon: MessageSquare, desc: 'Automated order tracking', path: '/dashboard/whatsapp-bot' },
-          { title: 'Expiry Tracking', icon: Clock, desc: 'Product freshness monitoring', path: '/dashboard/expiry-tracking' }
+          { title: 'Rider Management', icon: Truck, desc: 'Live GPS & route optimization' },
+          { title: 'Delivery Tracking', icon: MapPin, desc: 'Real-time delivery updates' },
+          { title: 'WhatsApp Bot', icon: MessageSquare, desc: 'Automated order tracking' },
+          { title: 'Expiry Tracking', icon: Clock, desc: 'Product freshness monitoring' }
         ];
       case 'other':
         return [
           ...baseFeatures,
-          { title: 'Barcode Scanning', icon: Eye, desc: 'Quick inventory updates', path: '/dashboard/barcode-scanning' },
-          { title: 'Auto Reorder', icon: Plus, desc: 'Smart stock replenishment', path: '/dashboard/auto-reorder' },
-          { title: 'Profit Analysis', icon: TrendingUp, desc: 'Detailed margin insights', path: '/dashboard/profit-analysis' },
-          { title: 'Staff Management', icon: Users, desc: 'Employee scheduling & tracking', path: '/dashboard/staff-management' }
+          { title: 'Barcode Scanning', icon: Eye, desc: 'Quick inventory updates' },
+          { title: 'Auto Reorder', icon: Plus, desc: 'Smart stock replenishment' },
+          { title: 'Profit Analysis', icon: TrendingUp, desc: 'Detailed margin insights' },
+          { title: 'Staff Management', icon: Users, desc: 'Employee scheduling & tracking' }
         ];
       default:
         return baseFeatures;
     }
   };
+
   interface RecentActivity {
     action: string;
     time: string;
@@ -313,7 +238,7 @@ export default function BizTrackerDashboard() {
           { action: 'Product expiry alert triggered', time: '1 hour ago', icon: Clock },
           { action: 'Daily route optimization done', time: '2 hours ago', icon: MapPin }
         ];
-      case 'other':
+      'other';
         return [
           { action: 'New order received', time: '2 minutes ago', icon: ShoppingCart },
           { action: 'Inventory auto-reorder triggered', time: '15 minutes ago', icon: Plus },
@@ -348,7 +273,6 @@ export default function BizTrackerDashboard() {
         description: 'Complete your business setup to see personalized information.'
       };
     }
-
     return {
       name: business.businessName,
       address: business.businessAddress || 'Jamnagar, Gujarat',
@@ -389,7 +313,6 @@ export default function BizTrackerDashboard() {
             opacity: 0.5;
           }
         }
-
         @keyframes gentleGlow {
           0%, 100% { 
             opacity: 0.3;
@@ -400,7 +323,6 @@ export default function BizTrackerDashboard() {
             transform: scale(1.1);
           }
         }
-
         @keyframes subtleDrift {
           0%, 100% { 
             transform: translateY(0px) translateX(0px);
@@ -411,7 +333,6 @@ export default function BizTrackerDashboard() {
             opacity: 0.4;
           }
         }
-
         @keyframes nebula {
           0%, 100% { 
             opacity: 0.1; 
@@ -422,7 +343,6 @@ export default function BizTrackerDashboard() {
             transform: scale(1.1) rotate(180deg);
           }
         }
-
         @keyframes slideInGlass {
           0% { 
             opacity: 0; 
@@ -433,29 +353,24 @@ export default function BizTrackerDashboard() {
             transform: translateY(0) scale(1);
           }
         }
-
         .floating-orb {
           position: absolute;
           border-radius: 50%;
           background: radial-gradient(circle, rgba(147, 197, 253, 0.3) 0%, rgba(99, 102, 241, 0.1) 50%, transparent 100%);
           filter: blur(2px);
         }
-
         .glow-dot {
           position: absolute;
           border-radius: 50%;
           background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(147, 197, 253, 0.3) 40%, transparent 100%);
           filter: blur(1px);
         }
-
         .star {
           animation: twinkle 2s ease-in-out infinite;
         }
-
         .nebula {
           animation: nebula 20s ease-in-out infinite;
         }
-
         .glass-card {
           background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
           backdrop-filter: blur(20px);
@@ -463,40 +378,35 @@ export default function BizTrackerDashboard() {
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
           animation: slideInGlass 0.8s ease-out;
         }
-
         .glass-header {
           background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
           backdrop-filter: blur(25px);
           border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-
         .metric-card {
           background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
           backdrop-filter: blur(15px);
           border: 1px solid rgba(255, 255, 255, 0.15);
           transition: all 0.3s ease;
         }
-
         .metric-card:hover {
           background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.1) 100%);
           transform: translateY(-5px);
           box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
         }
-
         .feature-card {
           background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
           backdrop-filter: blur(12px);
           border: 1px solid rgba(255, 255, 255, 0.1);
           transition: all 0.4s ease;
         }
-
         .feature-card:hover {
           background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
           transform: scale(1.02);
           border: 1px solid rgba(255, 255, 255, 0.2);
         }
       `}</style>
-
+      
       {/* Background remains the same */}
       <div className="fixed inset-0 bg-gradient-to-b from-gray-900 via-blue-900 to-black overflow-hidden pointer-events-none z-0">
         {/* All background elements remain the same */}
@@ -505,7 +415,6 @@ export default function BizTrackerDashboard() {
           <div className="nebula absolute top-32 right-20 w-80 h-80 bg-gradient-to-r from-pink-500/10 to-indigo-500/10 rounded-full blur-3xl" style={{animationDelay: '5s'}} />
           <div className="nebula absolute bottom-20 left-1/3 w-72 h-72 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-full blur-3xl" style={{animationDelay: '10s'}} />
         </div>
-
         <div className="absolute inset-0">
           {[...Array(150)].map((_, i) => (
             <div
@@ -523,7 +432,6 @@ export default function BizTrackerDashboard() {
             />
           ))}
         </div>
-
         <div className="absolute inset-0">
           {[...Array(6)].map((_, i) => (
             <div
@@ -540,7 +448,6 @@ export default function BizTrackerDashboard() {
             />
           ))}
         </div>
-
         <div className="absolute inset-0">
           {[...Array(12)].map((_, i) => (
             <div
@@ -557,7 +464,6 @@ export default function BizTrackerDashboard() {
             />
           ))}
         </div>
-
         <div className="absolute inset-0">
           {[...Array(15)].map((_, i) => (
             <div
@@ -573,7 +479,7 @@ export default function BizTrackerDashboard() {
           ))}
         </div>
       </div>
-
+      
       {/* Dashboard Content */}
       <div className="relative z-10 min-h-screen">
         {/* Header */}
@@ -601,7 +507,7 @@ export default function BizTrackerDashboard() {
             </div>
           </div>
         </header>
-
+        
         <div className="p-6 space-y-8">
           {/* Welcome Section */}
           <div className="glass-card p-8 rounded-3xl">
@@ -626,29 +532,18 @@ export default function BizTrackerDashboard() {
                     {businessInfo.address}
                   </span>
                 </div>
-                {!dashboardData.business && (
-                  <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-                    <p className="text-yellow-300 text-sm">
-                      💡 Complete your business setup to unlock personalized features and insights!
-                    </p>
-                  </div>
-                )}
               </div>
               <div className="hidden lg:flex items-center space-x-4">
-                <Link href = '/ai'>
-                  <button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300 transform hover:scale-105">
-                    Quick Actions
-                  </button>
-                </Link>
-                <Link href = '/ai'>
-                  <button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300 transform hover:scale-105">
-                    View Reports
-                  </button>
-                </Link>
+                <button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300 transform hover:scale-105">
+                  Quick Actions
+                </button>
+                <button className="glass-card px-6 py-3 rounded-xl text-white hover:bg-white/10 transition-colors">
+                  View Reports
+                </button>
               </div>
             </div>
           </div>
-
+          
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {metrics.map((metric, index) => {
@@ -672,41 +567,33 @@ export default function BizTrackerDashboard() {
               );
             })}
           </div>
-
+          
           {/* Quick Access Features */}
           <div className="glass-card p-8 rounded-3xl">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-white">Quick Access</h3>
-              <Link href="/dashboard/features">
-                <button className="text-blue-300 hover:text-white transition-colors">
-                  View All Features →
-                </button>
-              </Link>
+              <button className="text-blue-300 hover:text-white transition-colors">
+                View All Features →
+              </button>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {features.map((feature, index) => {
                 const IconComponent = feature.icon;
                 return (
-                  <Link key={index} href={feature.path}>
-                    <div
-                      className="feature-card p-6 rounded-2xl cursor-pointer hover:bg-white/5 transition-colors"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <div className="flex items-center mb-4">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mr-4">
-                          <IconComponent className="w-5 h-5 text-white" />
-                        </div>
-                        <h4 className="text-lg font-semibold text-white">{feature.title}</h4>
+                  <div key={index} className="feature-card p-6 rounded-2xl cursor-pointer" style={{animationDelay: `${index * 0.1}s`}}>
+                    <div className="flex items-center mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mr-4">
+                        <IconComponent className="w-5 h-5 text-white" />
                       </div>
-                      <p className="text-blue-200 text-sm">{feature.desc}</p>
+                      <h4 className="text-lg font-semibold text-white">{feature.title}</h4>
                     </div>
-                  </Link>
+                    <p className="text-blue-200 text-sm">{feature.desc}</p>
+                  </div>
                 );
               })}
             </div>
           </div>
-
+          
           {/* Recent Activity & Stats */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Activity */}
@@ -729,7 +616,7 @@ export default function BizTrackerDashboard() {
                 })}
               </div>
             </div>
-
+            
             {/* Performance Overview */}
             <div className="glass-card p-6 rounded-2xl">
               <h3 className="text-xl font-bold text-white mb-4">Today's Performance</h3>
@@ -754,7 +641,7 @@ export default function BizTrackerDashboard() {
               </div>
             </div>
           </div>
-
+          
           {/* Business Info Card */}
           {dashboardData.business && (
             <div className="glass-card p-6 rounded-2xl">
@@ -789,7 +676,7 @@ export default function BizTrackerDashboard() {
               </div>
             </div>
           )}
-
+          
           {/* Footer Message */}
           <div className="glass-card p-6 rounded-2xl text-center">
             <p className="text-blue-200 mb-2">
